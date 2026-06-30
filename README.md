@@ -5,7 +5,7 @@
 
 ## Overview
 
-A Poisson-based Monte Carlo tournament simulator that predicts the winner, regulation-time score, and goal scorers for all 16 knockout matches of the 2026 FIFA World Cup — from Round of 16 through the Final.
+A Negative Binomial Monte Carlo tournament simulator with Dixon-Coles calibration that predicts the winner, regulation-time score, and goal scorers for all 16 knockout matches of the 2026 FIFA World Cup — from Round of 16 through the Final.
 
 **Provisional champion prediction: ARG** *(will be regenerated after all Round of 32 fixtures are confirmed)*
 
@@ -19,16 +19,17 @@ Step 1: Seed Elo Ratings
 
 Step 2: Update Team Strengths
         Replay confirmed WC 2026 Round of 32 results
-        Elo shifts proportional to win/loss margin and goal difference
+        Elo shifts proportional to goal-based attack and defense ratings
 
 Step 3: Simulate Match Scores (50,000 runs per match)
-        Derive per-team expected goals (lambda) from Elo gap
-        Sample scorelines from independent Poisson distributions
+        Derive per-team expected goals (lambda) from Att/Def ratings
+        Sample scorelines from Negative Binomial distributions (r=6.0)
+        Apply Dixon-Coles calibration parameter (rho = -0.05)
         Pick the modal regulation-time scoreline as the prediction
 
 Step 4: Resolve Advancement + Sample Scorers
         Draw outcomes resolved via Elo-weighted advancement proxy
-        Scorer jersey numbers sampled from player goal-share distribution
+        Scorer jersey numbers sampled from smoothed goal-share distribution
 
 Step 5: Export CSV
         Write 16-row file in template format with fixed seed
@@ -72,7 +73,7 @@ Aligned with the template checked locally from `wcreflected.mulearn.org/submit`.
 | Detail | Value |
 |--------|-------|
 | Python version | 3.10.0 |
-| Key packages | `pandas`, `numpy`, `scipy`, `scikit-learn` |
+| Key packages | `pandas`, `numpy`, `scipy`, `requests` |
 | Random seed | `np.random.default_rng(42)` — fixed throughout |
 | Simulations per match | 50,000 (configurable via `--sims`) |
 | Output file | `wc2026_predictions.csv` (configurable via `--output`) |
@@ -90,24 +91,24 @@ $env:PYTHONIOENCODING="utf-8"; python test_model.py
 
 ## Model Details
 
-### Elo Rating System
-- K-factor: **60** for WC matches · **32** for competitive · **20** for friendlies
-- Goal-difference multiplier: 1.0 (≤1 goal) / 1.5 (2 goals) / 1.75 (3+)
-- Updated using all confirmed WC 2026 Round of 32 results
+### Attack/Defense Elo Rating System
+- Separates attacking and defending strength for each team.
+- K-factor: **24** for WC matches · **12** for non-WC matches.
+- Home-ground advantage: $+80$ Elo rating points added to host team's attack strength.
+- Updated dynamically using all confirmed WC 2026 results.
 
-### Poisson Goal Model
-- `lambda_team = 1.35 × (0.5 + win_probability)`, clipped to `[0.5, 3.0]`
-- Base rate 1.35 goals/team/game reflects WC knockout historical averages
-- Uses independent Poisson per team — a standard and well-understood baseline
-- **Known limitations:** 
-  - Independent Poisson does not capture score correlation at low margins. A Dixon-Coles adjustment or bivariate Poisson could improve calibration (planned as a future upgrade).
+### Negative Binomial Goal Model
+- Expected goals: `lambda_A = 1.35 * 10 ** ((att_A - def_B) / 400)`
+- Goal counts sampled using Negative Binomial distribution ($r=6.0$) to support realistic variance.
+- Dixon-Coles correlation parameter ($\rho = -0.05$) applied to calibrate low scores.
+- **Known limitations:**
   - Final bracket predictions depend on the completed Round of 32 fixture state at the time of regeneration.
-- **Score distribution note:** In this model, 1-1 is the most common modal regulation-time score for evenly matched knockout pairs because the predicted goal means cluster around 1.3–1.5 per team. Larger Elo gaps shift the modal score toward 0-1 or 1-0.
+- **Score distribution note:** In this model, 1-1, 0-0, 0-1, and 1-0 are typical modal scorelines, matching the low-scoring structure of knockout football. Heavily mismatched pairs yield more descriptive scorelines (e.g. BRA vs NOR → 2-1).
 
 ### Scorer Prediction
-- Scorers are sampled from a player-level probability distribution built from each player's **goal share** in WC 2026 matches
-- Planned improvement: incorporate minutes played and shot volume as additional weighting factors
-- Jersey numbers are deduplicated and stored in ascending order; empty string for 0-goal outcomes
+- Scorers are sampled from a player-level probability distribution built from each player's **goal share** in WC 2026 matches.
+- Smooth weights are applied (+0.25 Laplace smoothing) to reduce small-sample noise.
+- Jersey numbers are deduplicated and stored in ascending order; empty string for 0-goal outcomes.
 
 ---
 
@@ -117,22 +118,22 @@ $env:PYTHONIOENCODING="utf-8"; python test_model.py
 
 | match_id | Stage | Home | Away | Score | Winner | Win Prob |
 |----------|-------|------|------|-------|--------|----------|
-| R16_001 | Round of 16 | CAN | MAR | 1–1 | MAR | 69.1% |
-| R16_002 | Round of 16 | PAR | FRA | 0–1 | FRA | 75.1% |
-| R16_003 | Round of 16 | BRA | NOR | 1–1 | BRA | 63.1% |
-| R16_004 | Round of 16 | ESP | ENG | 1–1 | ESP | 57.8% |
-| R16_005 | Round of 16 | POR | USA | 1–1 | POR | 59.2% |
-| R16_006 | Round of 16 | ARG | BEL | 1–1 | ARG | 72.4% |
-| R16_007 | Round of 16 | MEX | SUI | 1–1 | MEX | 52.8% |
-| R16_008 | Round of 16 | COL | CIV | 1–1 | COL | 70.2% |
-| QF_001 | Quarter Final | MAR | FRA | 1–1 | FRA | 63.3% |
-| QF_002 | Quarter Final | BRA | ESP | 1–1 | ESP | 55.6% |
-| QF_003 | Quarter Final | POR | ARG | 1–1 | ARG | 68.1% |
-| QF_004 | Quarter Final | MEX | COL | 1–1 | COL | 54.4% |
-| SF_001 | Semi Final | FRA | ESP | 1–1 | FRA | 52.2% |
-| SF_002 | Semi Final | ARG | COL | 1–1 | ARG | 65.2% |
-| TP_001 | Third Place Play-off | ESP | COL | 1–1 | ESP | 63.2% |
-| F_001 | Final | FRA | ARG | 1–1 | ARG | 50.3% |
+| R16_001 | Round of 16 | CAN | MAR | 0–0 | MAR | 59.2% |
+| R16_002 | Round of 16 | PAR | FRA | 0–1 | FRA | 74.2% |
+| R16_003 | Round of 16 | BRA | NOR | 2–1 | BRA | 76.1% |
+| R16_004 | Round of 16 | ESP | ENG | 0–0 | ENG | 50.4% |
+| R16_005 | Round of 16 | POR | USA | 1–1 | POR | 72.7% |
+| R16_006 | Round of 16 | ARG | BEL | 1–0 | ARG | 66.7% |
+| R16_007 | Round of 16 | MEX | SUI | 0–0 | SUI | 58.0% |
+| R16_008 | Round of 16 | COL | CIV | 0–0 | COL | 57.8% |
+| QF_001 | Quarter Final | MAR | FRA | 0–1 | FRA | 67.6% |
+| QF_002 | Quarter Final | BRA | ENG | 1–1 | BRA | 58.8% |
+| QF_003 | Quarter Final | POR | ARG | 0–0 | ARG | 65.5% |
+| QF_004 | Quarter Final | SUI | COL | 0–0 | SUI | 50.2% |
+| SF_001 | Semi Final | FRA | BRA | 1–1 | FRA | 54.2% |
+| SF_002 | Semi Final | ARG | SUI | 0–0 | ARG | 67.1% |
+| TP_001 | Third Place Play-off | BRA | SUI | 1–1 | BRA | 63.6% |
+| F_001 | Final | FRA | ARG | 0–0 | ARG | 52.2% |
 
 ---
 
@@ -154,8 +155,8 @@ $env:PYTHONIOENCODING="utf-8"; python test_model.py
 |------|--------|
 | Elo ordering — stronger teams have win prob > 50% | Passing locally |
 | Expected goals scale with Elo gap | Passing locally |
-| Poisson mode produces 1-1 for lambda ~1.3–1.5 | Passing locally |
-| Score distribution from 1M sims (1-1 at 12.2%) | Passing locally |
+| Negative Binomial & Dixon-Coles goal model | Passing locally |
+| Score distribution from 1M sims (0-0 at 17.5%) | Passing locally |
 | Bracket propagation R16 → QF → SF → Final | Passing locally |
 | CSV schema matches current template | Passing locally |
 
