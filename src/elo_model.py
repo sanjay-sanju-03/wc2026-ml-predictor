@@ -193,6 +193,10 @@ def print_ratings(ratings: dict, top_n: int = 20):
         print(f"{i:<5} {team:<10} {att:<10.0f} {deff:<10.0f} {score:<12.0f}")
 
 
-def expected_score(rating_a: float, rating_b: float) -> float:
+def expected_score(rating_a, rating_b) -> float:
     """Proxy expected score for tournament bracket compatibility (expected win %)."""
+    if isinstance(rating_a, dict):
+        rating_a = (rating_a.get("att", 1500.0) + rating_a.get("def", 1500.0)) / 2.0
+    if isinstance(rating_b, dict):
+        rating_b = (rating_b.get("att", 1500.0) + rating_b.get("def", 1500.0)) / 2.0
     return 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
