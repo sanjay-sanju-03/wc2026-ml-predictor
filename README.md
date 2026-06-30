@@ -7,7 +7,7 @@
 
 A Poisson-based Monte Carlo tournament simulator that predicts the winner, regulation-time score, and goal scorers for all 16 knockout matches of the 2026 FIFA World Cup — from Round of 16 through the Final.
 
-**Predicted champion: FRA** *(provisional — will be regenerated after all Round of 32 fixtures are confirmed)*
+**Predicted champion: ARG** *(provisional — will be regenerated after all Round of 32 fixtures are confirmed)*
 
 ---
 
@@ -118,22 +118,22 @@ $env:PYTHONIOENCODING="utf-8"; python test_model.py
 
 | match_id | Stage | Home | Away | Score | Winner | Win Prob |
 |----------|-------|------|------|-------|--------|----------|
-| R16_001 | Round of 16 | CAN | MAR | 1–1 | MAR | 51.3% |
-| R16_002 | Round of 16 | PAR | FRA | 0–1 | FRA | 79.4% |
-| R16_003 | Round of 16 | BRA | NOR | 1–0 | BRA | 77.2% |
-| R16_004 | Round of 16 | ESP | ENG | 1–1 | ESP | 55.0% |
-| R16_005 | Round of 16 | POR | USA | 1–1 | POR | 64.2% |
-| R16_006 | Round of 16 | ARG | BEL | 1–1 | ARG | 61.0% |
-| R16_007 | Round of 16 | MEX | SUI | 1–1 | MEX | 55.1% |
-| R16_008 | Round of 16 | COL | CIV | 1–1 | COL | 69.2% |
-| QF_001 | Quarter Final | MAR | FRA | 1–1 | FRA | 73.0% |
-| QF_002 | Quarter Final | BRA | ESP | 1–1 | ESP | 50.1% |
-| QF_003 | Quarter Final | POR | ARG | 1–1 | ARG | 55.0% |
-| QF_004 | Quarter Final | MEX | COL | 1–1 | COL | 52.6% |
-| SF_001 | Semi Final | FRA | ESP | 1–1 | FRA | 53.6% |
-| SF_002 | Semi Final | ARG | COL | 1–1 | ARG | 67.7% |
-| TP_001 | Third Place Play-off | ESP | COL | 1–1 | ESP | 69.5% |
-| F_001 | Final | FRA | ARG | 1–1 | FRA | 55.9% |
+| R16_001 | Round of 16 | CAN | MAR | 1–1 | MAR | 69.1% |
+| R16_002 | Round of 16 | PAR | FRA | 0–1 | FRA | 75.1% |
+| R16_003 | Round of 16 | BRA | NOR | 1–1 | BRA | 63.1% |
+| R16_004 | Round of 16 | ESP | ENG | 1–1 | ESP | 57.8% |
+| R16_005 | Round of 16 | POR | USA | 1–1 | POR | 59.2% |
+| R16_006 | Round of 16 | ARG | BEL | 1–1 | ARG | 72.4% |
+| R16_007 | Round of 16 | MEX | SUI | 1–1 | MEX | 52.8% |
+| R16_008 | Round of 16 | COL | CIV | 1–1 | COL | 70.2% |
+| QF_001 | Quarter Final | MAR | FRA | 1–1 | FRA | 63.3% |
+| QF_002 | Quarter Final | BRA | ESP | 1–1 | ESP | 55.6% |
+| QF_003 | Quarter Final | POR | ARG | 1–1 | ARG | 68.1% |
+| QF_004 | Quarter Final | MEX | COL | 1–1 | COL | 54.4% |
+| SF_001 | Semi Final | FRA | ESP | 1–1 | FRA | 52.2% |
+| SF_002 | Semi Final | ARG | COL | 1–1 | ARG | 65.2% |
+| TP_001 | Third Place Play-off | ESP | COL | 1–1 | ESP | 63.2% |
+| F_001 | Final | FRA | ARG | 1–1 | ARG | 50.3% |
 
 ---
 

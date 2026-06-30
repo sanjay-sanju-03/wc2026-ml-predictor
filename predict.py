@@ -28,6 +28,24 @@ from src.simulator import simulate_bracket
 from src.generate_csv import generate_submission_csv, validate_csv
 
 
+def download_historical_data(dest_path: str = "data/results.csv") -> bool:
+    """Download Mart Jürisoo's international results CSV from GitHub."""
+    url = "https://raw.githubusercontent.com/martj42/international_results/master/results.csv"
+    print(f"\n[*] Downloading latest international football results from GitHub...")
+    import requests
+    try:
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        with open(dest_path, "w", encoding="utf-8") as f:
+            f.write(response.text)
+        print(f"   [OK] Downloaded and saved to {dest_path}")
+        return True
+    except Exception as e:
+        print(f"   [!] Download failed: {e}")
+        return False
+
+
 def load_historical_data(filepath: str) -> pd.DataFrame:
     """Load and validate historical match results CSV."""
     print(f"\n[*] Loading historical data from: {filepath}")
@@ -86,11 +104,17 @@ def main():
 
     # Step 1: Load historical data
     historical_df = pd.DataFrame()
-    if args.data:
-        if os.path.exists(args.data):
-            historical_df = load_historical_data(args.data)
-        else:
-            print(f"[!] Data file not found: {args.data}. Using seed ratings.")
+    data_path = args.data if args.data else "data/results.csv"
+
+    # Auto-download if not present
+    if not os.path.exists(data_path):
+        if not args.data:
+            download_historical_data(data_path)
+
+    if os.path.exists(data_path):
+        historical_df = load_historical_data(data_path)
+    else:
+        print("[!] No historical data found/downloaded. Using seed ratings.")
 
     # Step 2: Compute Elo ratings
     print("\n[*] Computing team strength (Elo ratings)...")

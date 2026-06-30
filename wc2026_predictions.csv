@@ -1,17 +1,17 @@
 match_id,stage,home_team,away_team,predicted_home_score,predicted_away_score,predicted_scorers_home,predicted_scorers_away,predicted_winner
 R16_001,Round of 16,CAN,MAR,1,1,10,7,MAR
-R16_002,Round of 16,PAR,FRA,0,1,,9,FRA
-R16_003,Round of 16,BRA,NOR,1,0,10,,BRA
-R16_004,Round of 16,ESP,ENG,1,1,10,7,ESP
+R16_002,Round of 16,PAR,FRA,0,1,,10,FRA
+R16_003,Round of 16,BRA,NOR,1,1,7,7,BRA
+R16_004,Round of 16,ESP,ENG,1,1,7,9,ESP
 R16_005,Round of 16,POR,USA,1,1,7,9,POR
-R16_006,Round of 16,ARG,BEL,1,1,9,10,ARG
-R16_007,Round of 16,MEX,SUI,1,1,9,10,MEX
-R16_008,Round of 16,COL,CIV,1,1,9,7,COL
-QF_001,Quarter Final,MAR,FRA,1,1,7,10,FRA
-QF_002,Quarter Final,BRA,ESP,1,1,7,9,ESP
+R16_006,Round of 16,ARG,BEL,1,1,10,9,ARG
+R16_007,Round of 16,MEX,SUI,1,1,9,9,MEX
+R16_008,Round of 16,COL,CIV,1,1,10,7,COL
+QF_001,Quarter Final,MAR,FRA,1,1,9,7,FRA
+QF_002,Quarter Final,BRA,ESP,1,1,10,10,ESP
 QF_003,Quarter Final,POR,ARG,1,1,8,10,ARG
-QF_004,Quarter Final,MEX,COL,1,1,9,9,COL
-SF_001,Semi Final,FRA,ESP,1,1,10,9,FRA
-SF_002,Semi Final,ARG,COL,1,1,9,9,ARG
-TP_001,Third Place Play-off,ESP,COL,1,1,10,10,ESP
-F_001,Final,FRA,ARG,1,1,9,9,FRA
+QF_004,Quarter Final,MEX,COL,1,1,7,9,COL
+SF_001,Semi Final,FRA,ESP,1,1,9,7,FRA
+SF_002,Semi Final,ARG,COL,1,1,22,10,ARG
+TP_001,Third Place Play-off,ESP,COL,1,1,7,11,ESP
+F_001,Final,FRA,ARG,1,1,9,10,ARG

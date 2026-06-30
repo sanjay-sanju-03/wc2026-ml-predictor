@@ -26,6 +26,44 @@ def update_elo(rating_a: float, rating_b: float, result: float,
     return new_a, new_b
 
 
+COUNTRY_TO_CODE = {
+    "France": "FRA",
+    "Spain": "ESP",
+    "Brazil": "BRA",
+    "Argentina": "ARG",
+    "England": "ENG",
+    "Portugal": "POR",
+    "Germany": "GER",
+    "Netherlands": "NED",
+    "Belgium": "BEL",
+    "Colombia": "COL",
+    "United States": "USA",
+    "USA": "USA",
+    "Mexico": "MEX",
+    "Canada": "CAN",
+    "Morocco": "MAR",
+    "Switzerland": "SUI",
+    "Croatia": "CRO",
+    "Senegal": "SEN",
+    "Norway": "NOR",
+    "Sweden": "SWE",
+    "Austria": "AUT",
+    "Japan": "JPN",
+    "Ecuador": "ECU",
+    "Paraguay": "PAR",
+    "Ivory Coast": "CIV",
+    "Egypt": "EGY",
+    "Australia": "AUS",
+    "Ghana": "GHA",
+    "Algeria": "ALG",
+    "Bosnia and Herzegovina": "BIH",
+    "DR Congo": "CGO",
+    "South Africa": "RSA",
+    "Cabo Verde": "CPV",
+    "Cape Verde": "CPV",
+}
+
+
 def build_elo_from_history(matches_df: pd.DataFrame,
                            base_k: float = 32,
                            wc_k: float = 60) -> dict:
@@ -45,6 +83,10 @@ def build_elo_from_history(matches_df: pd.DataFrame,
         away = row["away_team"]
         home_goals = row["home_score"]
         away_goals = row["away_score"]
+
+        # Map full names to three-letter codes for WC teams
+        home = COUNTRY_TO_CODE.get(home, home)
+        away = COUNTRY_TO_CODE.get(away, away)
 
         # Initialize unknown teams
         if home not in ratings:
