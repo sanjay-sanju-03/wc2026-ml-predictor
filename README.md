@@ -7,7 +7,7 @@
 
 A Poisson-based Monte Carlo tournament simulator that predicts the winner, regulation-time score, and goal scorers for all 16 knockout matches of the 2026 FIFA World Cup — from Round of 16 through the Final.
 
-**Current champion prediction: ARG** *(provisional — will be regenerated after all Round of 32 fixtures are confirmed)*
+**Provisional champion prediction: ARG** *(will be regenerated after all Round of 32 fixtures are confirmed)*
 
 ---
 
@@ -39,8 +39,8 @@ Step 5: Export CSV
 ## Assumptions
 
 - `predicted_home_score` and `predicted_away_score` represent the **regulation-time score** (90 minutes only).
-- `predicted_winner` stores the team expected to progress from the knockout match. A drawn regulation score is allowed; `predicted_winner` stores the team expected to progress from the knockout match. This field is always populated for all 16 matches.
-- For the Final, if the score is level at 90 minutes, `predicted_winner` contains the team expected to win the tournament. Re-check final validator behavior before upload to confirm this field interpretation.
+- `predicted_winner` stores the team expected to progress from the knockout match. A drawn regulation score is allowed, and this field is always populated for all 16 matches.
+- For the Final, `predicted_winner` contains the team expected to win the tournament. Re-check final validator behavior before upload to confirm this field interpretation.
 - Scorer jersey numbers correspond to the **set of players predicted to score** in that match. Exact set match is required for scorer points.
 - The bracket is **provisional** and will be regenerated once all Round of 32 results are confirmed (by July 3).
 
@@ -79,7 +79,7 @@ Aligned with the template checked locally from `wcreflected.mulearn.org/submit`.
 | Tie-breaking | When outcomes have near-identical probability, the highest-frequency modal score is chosen; the fixed seed ensures a deterministic output. |
 
 ```powershell
-# Standard run (downloads results dataset automatically)
+# Standard run (uses the configured results dataset path)
 $env:PYTHONIOENCODING="utf-8"; python predict.py --sims 50000
 
 # Run diagnostic tests
@@ -101,7 +101,7 @@ $env:PYTHONIOENCODING="utf-8"; python test_model.py
 - Uses independent Poisson per team — a standard and well-understood baseline
 - **Known limitations:** 
   - Independent Poisson does not capture score correlation at low margins. A Dixon-Coles adjustment or bivariate Poisson could improve calibration (planned as a future upgrade).
-  - Bracket accuracy depends on the final Round of 32 fixture state at the time of regeneration.
+  - Final bracket predictions depend on the completed Round of 32 fixture state at the time of regeneration.
 - **Score distribution note:** In this model, 1-1 is the most common modal regulation-time score for evenly matched knockout pairs because the predicted goal means cluster around 1.3–1.5 per team. Larger Elo gaps shift the modal score toward 0-1 or 1-0.
 
 ### Scorer Prediction
