@@ -7,7 +7,7 @@
 
 A Poisson-based Monte Carlo tournament simulator that predicts the winner, regulation-time score, and goal scorers for all 16 knockout matches of the 2026 FIFA World Cup — from Round of 16 through the Final.
 
-**Predicted champion: ARG** *(provisional — will be regenerated after all Round of 32 fixtures are confirmed)*
+**Current champion prediction: ARG** *(provisional — will be regenerated after all Round of 32 fixtures are confirmed)*
 
 ---
 
@@ -31,7 +31,7 @@ Step 4: Resolve Advancement + Sample Scorers
         Scorer jersey numbers sampled from player goal-share distribution
 
 Step 5: Export CSV
-        Write 16-row file in official template format with fixed seed
+        Write 16-row file in template format with fixed seed
 ```
 
 ---
@@ -39,16 +39,16 @@ Step 5: Export CSV
 ## Assumptions
 
 - `predicted_home_score` and `predicted_away_score` represent the **regulation-time score** (90 minutes only).
-- `predicted_winner` stores the **team expected to advance** from the knockout match. A drawn regulation score is allowed — `predicted_winner` resolves the team expected to progress (via Elo-weighted penalty proxy). This field is always populated for all 16 matches.
-- For the Final specifically, if the score is level at 90 minutes, `predicted_winner` contains the team most likely to lift the trophy. Re-check final validator behavior before upload to confirm this is the expected field interpretation.
+- `predicted_winner` stores the team expected to progress from the knockout match. A drawn regulation score is allowed; `predicted_winner` stores the team expected to progress from the knockout match. This field is always populated for all 16 matches.
+- For the Final, if the score is level at 90 minutes, `predicted_winner` contains the team expected to win the tournament. Re-check final validator behavior before upload to confirm this field interpretation.
 - Scorer jersey numbers correspond to the **set of players predicted to score** in that match. Exact set match is required for scorer points.
-- The current bracket is **partly provisional**. Fixtures will be updated and the CSV regenerated once all Round of 32 results are confirmed (by July 3).
+- The bracket is **provisional** and will be regenerated once all Round of 32 results are confirmed (by July 3).
 
 ---
 
 ## CSV Schema
 
-Aligned with the currently downloaded official template from `wcreflected.mulearn.org/submit`. Re-verify column names against the actual file before final upload — a single mismatch can fail validation.
+Aligned with the template checked locally from `wcreflected.mulearn.org/submit`. Re-verify column names against the actual file before final upload — a single mismatch can fail validation.
 
 | Column | Format | Notes |
 |--------|--------|-------|
@@ -79,11 +79,8 @@ Aligned with the currently downloaded official template from `wcreflected.mulear
 | Tie-breaking | When outcomes have near-identical probability, the highest-frequency modal score is chosen; the fixed seed ensures a deterministic output. |
 
 ```powershell
-# Standard run (seed Elo, no external data needed)
+# Standard run (downloads results dataset automatically)
 $env:PYTHONIOENCODING="utf-8"; python predict.py --sims 50000
-
-# With historical results CSV for better Elo calibration
-$env:PYTHONIOENCODING="utf-8"; python predict.py --data data/results.csv --sims 50000
 
 # Run diagnostic tests
 $env:PYTHONIOENCODING="utf-8"; python test_model.py
@@ -102,11 +99,13 @@ $env:PYTHONIOENCODING="utf-8"; python test_model.py
 - `lambda_team = 1.35 × (0.5 + win_probability)`, clipped to `[0.5, 3.0]`
 - Base rate 1.35 goals/team/game reflects WC knockout historical averages
 - Uses independent Poisson per team — a standard and well-understood baseline
-- **Known limitation:** independent Poisson does not capture score correlation at low margins. A Dixon-Coles adjustment or bivariate Poisson could improve calibration. Planned as a future upgrade.
-- **Score distribution note:** In this model, the most common modal regulation-time score for evenly matched knockout pairs is 1-1, because predicted goal means cluster around 1.3–1.5 per team where the Poisson mode is 1 for both sides. This matches the low-scoring structure of knockout football. Heavily mismatched pairs produce different modal scores (e.g. PAR vs FRA → 0-1, BRA vs NOR → 1-0).
+- **Known limitations:** 
+  - Independent Poisson does not capture score correlation at low margins. A Dixon-Coles adjustment or bivariate Poisson could improve calibration (planned as a future upgrade).
+  - Bracket accuracy depends on the final Round of 32 fixture state at the time of regeneration.
+- **Score distribution note:** In this model, 1-1 is the most common modal regulation-time score for evenly matched knockout pairs because the predicted goal means cluster around 1.3–1.5 per team. Larger Elo gaps shift the modal score toward 0-1 or 1-0.
 
 ### Scorer Prediction
-- Scorers are sampled from a player-level probability distribution built from each player's **goal share** in WC 2026 group stage and Round of 32 matches
+- Scorers are sampled from a player-level probability distribution built from each player's **goal share** in WC 2026 matches
 - Planned improvement: incorporate minutes played and shot volume as additional weighting factors
 - Jersey numbers are deduplicated and stored in ascending order; empty string for 0-goal outcomes
 
@@ -114,7 +113,7 @@ $env:PYTHONIOENCODING="utf-8"; python test_model.py
 
 ## Provisional Predictions
 
-> **These are illustrative bracket outputs and will be regenerated after all Round of 32 results are finalized.** Do not treat this table as the final submission until the CSV is regenerated.
+> **These are illustrative bracket outputs and will be regenerated after all Round of 32 results are finalized.**
 
 | match_id | Stage | Home | Away | Score | Winner | Win Prob |
 |----------|-------|------|------|-------|--------|----------|
@@ -158,9 +157,9 @@ $env:PYTHONIOENCODING="utf-8"; python test_model.py
 | Poisson mode produces 1-1 for lambda ~1.3–1.5 | Passing locally |
 | Score distribution from 1M sims (1-1 at 12.2%) | Passing locally |
 | Bracket propagation R16 → QF → SF → Final | Passing locally |
-| CSV schema matches current downloaded template | Passing locally |
+| CSV schema matches current template | Passing locally |
 
-Calibration metrics (Brier score, log loss, exact-score hit rate, scorer-set exact match rate) cannot be evaluated before the tournament results are known.
+Calibration metrics cannot be evaluated before the tournament results are known.
 
 ---
 
@@ -181,28 +180,20 @@ Calibration metrics (Brier score, log loss, exact-score hit rate, scorer-set exa
 |------|-------------|
 | `predict.py` | Main pipeline entry point |
 | `src/data.py` | R16 fixtures (partly provisional), Elo seeds, scorer data |
-| `src/elo_model.py` | Elo computation: seed → WC 2026 updates |
-| `src/simulator.py` | Poisson Monte Carlo simulator and bracket propagation |
-| `src/generate_csv.py` | CSV writer and format validator |
-| `wc2026_predictions.csv` | Current submission CSV — regenerate after fixture update |
-| `WC2026_Prediction_Model.ipynb` | Jupyter notebook required as submission link |
-| `test_model.py` | Core diagnostic tests |
+| `src/elo_model.py` | Elo rating logic |
+| `src/simulator.py` | Poisson Monte Carlo simulator |
+| `src/generate_csv.py` | CSV writer and validator |
+| `wc2026_predictions.csv` | Predictions output file |
+| `WC2026_Prediction_Model.ipynb` | Colab notebook template |
+| `test_model.py` | Diagnostic tests |
 
 ---
 
 ## Submission Checklist
 
-- [x] Pipeline runs end-to-end without errors
-- [x] CSV schema aligned with currently downloaded template
-- [x] All 16 match rows present with correct `match_id` values
-- [x] Stage names match required strings including `Third Place Play-off`
-- [x] `predicted_winner` populated for all 16 matches
-- [x] Scorer fields are empty string (not null) for 0-goal teams
-- [x] Jersey numbers are deduplicated, sorted ascending, comma-separated
-- [x] Core diagnostic tests passing locally
-- [ ] **Re-verify CSV column names against the final downloaded template before upload**
-- [ ] **Update R16 fixtures in `src/data.py` once all R32 results are confirmed**
+- [ ] **Re-verify CSV column names against the downloaded template before upload**
+- [ ] **Update R16 fixtures in `src/data.py` once all R32 results are confirmed (by July 3)**
 - [ ] Re-run: `$env:PYTHONIOENCODING="utf-8"; python predict.py --sims 50000`
-- [ ] Upload `wc2026_predictions.csv` to https://wcreflected.mulearn.org/submit
+- [ ] Upload `wc2026_predictions.csv` to the submission portal
 - [ ] Add Google Colab link for `WC2026_Prediction_Model.ipynb`
 - [ ] Post screenshot in Discord with `#mufifa2026-predict`
