@@ -11,12 +11,15 @@ print("=== TEST 1: ELO ORDERING ===")
 pairs = [('FRA','PAR'), ('BRA','NOR'), ('ESP','ENG'), ('ARG','BEL'), ('FRA','CAN')]
 all_ok = True
 for a, b in pairs:
-    ea, eb = ratings[a], ratings[b]
+    r_a = ratings[a]
+    r_b = ratings[b]
+    ea = (r_a["att"] + r_a["def"]) / 2.0
+    eb = (r_b["att"] + r_b["def"]) / 2.0
     wp = expected_score(ea, eb)
     status = "[OK]" if wp > 0.5 else "[FAIL]"
     if wp <= 0.5:
         all_ok = False
-    print(f"  {a}({ea:.0f}) vs {b}({eb:.0f}): {a} win prob = {wp:.1%} {status}")
+    print(f"  {a}(comb:{ea:.0f}) vs {b}(comb:{eb:.0f}): {a} win prob = {wp:.1%} {status}")
 
 print()
 print("=== TEST 2: EXPECTED GOALS ===")
@@ -31,13 +34,9 @@ for a, b, label in match_pairs:
     print(f"  {a} vs {b} ({label}): lambda_{a}={la:.3f}, lambda_{b}={lb:.3f}")
 
 print()
-print("=== TEST 3: WHY MOST SCORES ARE 1-1 (Poisson Math) ===")
-print("  The Poisson mode (most likely integer outcome) for typical WC knockout lambdas:")
-for lam in [0.87, 0.91, 1.27, 1.35, 1.43, 1.83]:
-    probs = [poisson.pmf(k, lam) for k in range(5)]
-    mode = int(np.argmax(probs))
-    bar = "=" * int(probs[mode] * 100)
-    print(f"  lambda={lam:.2f} -> mode={mode}  P(mode)={probs[mode]:.3f}  {bar}")
+print("=== TEST 3: DIXON-COLES & OVERDISPERSION MATH ===")
+print("  Matches now draw goals from Negative Binomial distribution to avoid flat predictions.")
+print("  Dixon-Coles is applied to adjust 0-0, 1-0, 0-1, and 1-1 probabilities.")
 
 print()
 print("=== TEST 4: SCORE DISTRIBUTION (1M sims, CAN vs MAR) ===")
@@ -45,7 +44,7 @@ rng = np.random.default_rng(42)
 res = simulate_match(ratings['CAN'], ratings['MAR'], n_sims=1_000_000, rng=rng)
 top_scores = sorted(res['all_scores'].items(), key=lambda x: x[1], reverse=True)[:8]
 for score, count in top_scores:
-    print(f"  {score[0]}-{score[1]}: {count/10000:.1f}%")
+    print(f"  {score[0]}-{score[1]}: {count/10000:.2f}%")
 
 print()
 print("=== TEST 5: BRACKET PROPAGATION ===")

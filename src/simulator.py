@@ -1,61 +1,80 @@
 """
-simulator.py - Match outcome simulator using Poisson + Elo-based goal models.
-Runs 50,000 Monte Carlo simulations per match to determine:
-  - Most likely result (win/draw/lose)
-  - Most likely exact score
-  - Bracket progression through QF, SF, 3rd place, Final
+simulator.py - Match outcome simulator using Negative Binomial goals + Att/Def Elo ratings.
+Runs 50,000 Monte Carlo simulations per match with Dixon-Coles adjustment.
 """
 
 import numpy as np
-from scipy.stats import poisson
 from src.elo_model import expected_score
 from src.data import ROUND_OF_16_FIXTURES, TEAM_SCORERS
 
 
 # ─── Goal Rate Constants ──────────────────────────────────────────────────────
 BASE_GOALS_PER_GAME = 1.35  # Average goals per team per WC knockout game
-ELO_GOALS_SCALE = 0.0015    # How much Elo diff translates to extra goals
+DISPERSION_PARAMETER = 6.0  # r parameter for Negative Binomial (controls overdispersion)
+DIXON_COLES_RHO = -0.05      # Correlation parameter for low-scoring adjustment
 
 
-def compute_expected_goals(elo_a: float, elo_b: float,
+def compute_expected_goals(team_a_ratings: dict, team_b_ratings: dict,
                             base_rate: float = BASE_GOALS_PER_GAME) -> tuple:
     """
-    Compute expected goals for both teams based on Elo difference.
-    Returns (lambda_a, lambda_b) — Poisson parameters.
+    Compute expected goals (lambdas) for both teams based on Att/Def ratings.
+    Returns (lambda_a, lambda_b)
     """
-    win_prob_a = expected_score(elo_a, elo_b)
-    # Scale expected goals based on relative strength
-    # Stronger team scores more, weaker team scores less
-    lambda_a = base_rate * (0.5 + win_prob_a)
-    lambda_b = base_rate * (0.5 + (1 - win_prob_a))
-    # Clip to reasonable range
-    lambda_a = np.clip(lambda_a, 0.5, 3.0)
-    lambda_b = np.clip(lambda_b, 0.5, 3.0)
+    # Expected goals for A: base_rate * 10 ** ((att_a - def_b) / 400)
+    # Expected goals for B: base_rate * 10 ** ((att_b - def_a) / 400)
+    diff_a = (team_a_ratings.get("att", 1500.0) - team_b_ratings.get("def", 1500.0)) / 400.0
+    diff_b = (team_b_ratings.get("att", 1500.0) - team_a_ratings.get("def", 1500.0)) / 400.0
+
+    lambda_a = np.clip(base_rate * (10 ** diff_a), 0.2, 4.5)
+    lambda_b = np.clip(base_rate * (10 ** diff_b), 0.2, 4.5)
+
     return lambda_a, lambda_b
 
 
-def simulate_match(elo_a: float, elo_b: float,
+def apply_dixon_coles(score_counts: dict, lambda_a: float, lambda_b: float, rho: float = DIXON_COLES_RHO) -> dict:
+    """
+    Apply Dixon-Coles correlation adjustment for low scoring outcomes
+    to calibrate 0-0, 1-0, 0-1, 1-1 probabilities.
+    """
+    adjusted = {}
+    for (ga, gb), count in score_counts.items():
+        adj_factor = 1.0
+        if ga == 0 and gb == 0:
+            adj_factor = 1.0 - lambda_a * lambda_b * rho
+        elif ga == 1 and gb == 0:
+            adj_factor = 1.0 + lambda_b * rho
+        elif ga == 0 and gb == 1:
+            adj_factor = 1.0 + lambda_a * rho
+        elif ga == 1 and gb == 1:
+            adj_factor = 1.0 - rho
+        
+        adjusted[(ga, gb)] = count * max(adj_factor, 0.0)
+    return adjusted
+
+
+def simulate_match(team_a_ratings: dict, team_b_ratings: dict,
                    n_sims: int = 50000, rng: np.random.Generator = None) -> dict:
     """
-    Simulate a single match n_sims times.
-    Returns a dict with:
-      - result: 'home' | 'away' (no draws in knockout — extra time/pens)
-      - score: (home_goals, away_goals) most likely scoreline
-      - win_prob_home: float
-      - all_scores: {(h, a): count} for all simulated scorelines
+    Simulate a single match n_sims times using Negative Binomial distribution.
     """
     if rng is None:
         rng = np.random.default_rng(42)
 
-    lambda_a, lambda_b = compute_expected_goals(elo_a, elo_b)
+    lambda_a, lambda_b = compute_expected_goals(team_a_ratings, team_b_ratings)
 
-    # Sample scorelines from independent Poisson distributions
-    goals_a = rng.poisson(lambda_a, n_sims)
-    goals_b = rng.poisson(lambda_b, n_sims)
+    # Negative Binomial parameters: r (successes), p (success probability)
+    # Mean mu = r * (1 - p) / p  =>  p = r / (r + mu)
+    r = DISPERSION_PARAMETER
+    p_a = r / (r + lambda_a)
+    p_b = r / (r + lambda_b)
 
-    # In knockout matches, draws go to extra time / penalties
-    # For draws, we use Elo win probability to determine who wins on pens
-    win_prob_a = expected_score(elo_a, elo_b)
+    goals_a = rng.negative_binomial(r, p_a, n_sims)
+    goals_b = rng.negative_binomial(r, p_b, n_sims)
+
+    # Proxy expected score (advancement win probability)
+    rating_a = (team_a_ratings.get("att", 1500.0) + team_a_ratings.get("def", 1500.0)) / 2.0
+    rating_b = (team_b_ratings.get("att", 1500.0) + team_b_ratings.get("def", 1500.0)) / 2.0
+    win_prob_a = expected_score(rating_a, rating_b)
 
     wins_a = 0
     wins_b = 0
@@ -70,15 +89,18 @@ def simulate_match(elo_a: float, elo_b: float,
             wins_b += 1
             score_key = (ga, gb)
         else:
-            # Draw -> penalties (use Elo prob)
+            # Draw -> advancement winner resolved by Elo-based proxy
             if rng.random() < win_prob_a:
                 wins_a += 1
-                score_key = (ga, gb)  # Score stays the same in extra time
+                score_key = (ga, gb)
             else:
                 wins_b += 1
                 score_key = (ga, gb)
 
         score_counts[score_key] = score_counts.get(score_key, 0) + 1
+
+    # Apply Dixon-Coles calibration adjustment
+    score_counts = apply_dixon_coles(score_counts, lambda_a, lambda_b)
 
     # Most likely scoreline
     best_score = max(score_counts, key=score_counts.get)
@@ -96,31 +118,34 @@ def simulate_match(elo_a: float, elo_b: float,
 
 def get_top_scorers(team: str, n_goals: int, rng: np.random.Generator) -> list:
     """
-    Pick the most likely jersey numbers for `n_goals` goals scored by `team`.
-    Returns a list of jersey numbers (may repeat if same player scores twice).
+    Pick the most likely jersey numbers for `n_goals` goals scored by `team` using smoothed goal shares.
     """
     if team not in TEAM_SCORERS or n_goals == 0:
         return []
 
     scorers_data = TEAM_SCORERS[team]
-    # Build probability weights based on goals scored so far
     names = [s[0] for s in scorers_data]  # jersey numbers
-    weights = np.array([s[2] for s in scorers_data], dtype=float)
+    tally = np.array([s[2] for s in scorers_data], dtype=float)
+
+    # Smooth the weights to model shot volume & role influence, reducing small-sample noise
+    weights = tally + 0.25
     weights = weights / weights.sum()
 
-    # Sample n_goals scorers (with replacement - a player can score multiple)
+    # Sample n_goals scorers (with replacement)
     selected = rng.choice(names, size=n_goals, replace=True, p=weights)
-    # Return unique set (as the platform wants the set of scorers)
     return sorted(set(selected.tolist()))
 
 
 def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
     """
     Simulate the entire knockout bracket from R16 to Final.
-    Returns predictions for all 16 matches (R16, QF, SF, 3rd place, Final).
     """
     rng = np.random.default_rng(42)
     predictions = []
+
+    # Helper to get team's ratings
+    def get_team_ratings(team: str) -> dict:
+        return ratings.get(team, {"att": 1500.0, "def": 1500.0})
 
     # ─── Round of 16 ─────────────────────────────────────────────────────────
     r16_fixtures = ROUND_OF_16_FIXTURES
@@ -129,9 +154,7 @@ def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
 
     print("\n=== ROUND OF 16 ===")
     for team_a, team_b in r16_fixtures:
-        elo_a = ratings.get(team_a, 1500)
-        elo_b = ratings.get(team_b, 1500)
-        result = simulate_match(elo_a, elo_b, n_sims=n_sims, rng=rng)
+        result = simulate_match(get_team_ratings(team_a), get_team_ratings(team_b), n_sims=n_sims, rng=rng)
 
         home_goals, away_goals = result["score"]
         winner = team_a if result["result"] == "home" else team_b
@@ -139,7 +162,6 @@ def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
         r16_winners.append(winner)
         r16_losers.append(loser)
 
-        # Scorer prediction
         scorers_home = get_top_scorers(team_a, home_goals, rng)
         scorers_away = get_top_scorers(team_b, away_goals, rng)
 
@@ -159,8 +181,7 @@ def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
         print(f"  {team_a} vs {team_b}: {home_goals}-{away_goals} -> {winner} "
               f"(prob: {pred['win_prob']:.1%})")
 
-    # ─── Quarter Finals (4 matches) ───────────────────────────────────────────
-    # Bracket: R16 winners pair up: (0 vs 1), (2 vs 3), (4 vs 5), (6 vs 7)
+    # ─── Quarter Finals ───────────────────────────────────────────────────────
     qf_fixtures = [
         (r16_winners[0], r16_winners[1]),
         (r16_winners[2], r16_winners[3]),
@@ -172,9 +193,7 @@ def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
 
     print("\n=== QUARTER FINALS ===")
     for team_a, team_b in qf_fixtures:
-        elo_a = ratings.get(team_a, 1500)
-        elo_b = ratings.get(team_b, 1500)
-        result = simulate_match(elo_a, elo_b, n_sims=n_sims, rng=rng)
+        result = simulate_match(get_team_ratings(team_a), get_team_ratings(team_b), n_sims=n_sims, rng=rng)
 
         home_goals, away_goals = result["score"]
         winner = team_a if result["result"] == "home" else team_b
@@ -201,7 +220,7 @@ def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
         print(f"  {team_a} vs {team_b}: {home_goals}-{away_goals} -> {winner} "
               f"(prob: {pred['win_prob']:.1%})")
 
-    # ─── Semi Finals (2 matches) ──────────────────────────────────────────────
+    # ─── Semi Finals ──────────────────────────────────────────────────────────
     sf_fixtures = [
         (qf_winners[0], qf_winners[1]),
         (qf_winners[2], qf_winners[3]),
@@ -211,9 +230,7 @@ def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
 
     print("\n=== SEMI FINALS ===")
     for team_a, team_b in sf_fixtures:
-        elo_a = ratings.get(team_a, 1500)
-        elo_b = ratings.get(team_b, 1500)
-        result = simulate_match(elo_a, elo_b, n_sims=n_sims, rng=rng)
+        result = simulate_match(get_team_ratings(team_a), get_team_ratings(team_b), n_sims=n_sims, rng=rng)
 
         home_goals, away_goals = result["score"]
         winner = team_a if result["result"] == "home" else team_b
@@ -240,11 +257,9 @@ def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
         print(f"  {team_a} vs {team_b}: {home_goals}-{away_goals} -> {winner} "
               f"(prob: {pred['win_prob']:.1%})")
 
-    # ─── Third Place (1 match) ────────────────────────────────────────────────
+    # ─── Third Place Play-off ─────────────────────────────────────────────────
     third_a, third_b = sf_losers[0], sf_losers[1]
-    elo_a = ratings.get(third_a, 1500)
-    elo_b = ratings.get(third_b, 1500)
-    result = simulate_match(elo_a, elo_b, n_sims=n_sims, rng=rng)
+    result = simulate_match(get_team_ratings(third_a), get_team_ratings(third_b), n_sims=n_sims, rng=rng)
     home_goals, away_goals = result["score"]
     winner = third_a if result["result"] == "home" else third_b
 
@@ -268,11 +283,9 @@ def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
     print(f"  {third_a} vs {third_b}: {home_goals}-{away_goals} -> {winner} "
           f"(prob: {pred['win_prob']:.1%})")
 
-    # ─── Final (1 match) ──────────────────────────────────────────────────────
+    # ─── Final ────────────────────────────────────────────────────────────────
     final_a, final_b = sf_winners[0], sf_winners[1]
-    elo_a = ratings.get(final_a, 1500)
-    elo_b = ratings.get(final_b, 1500)
-    result = simulate_match(elo_a, elo_b, n_sims=n_sims, rng=rng)
+    result = simulate_match(get_team_ratings(final_a), get_team_ratings(final_b), n_sims=n_sims, rng=rng)
     home_goals, away_goals = result["score"]
     champion = final_a if result["result"] == "home" else final_b
 
