@@ -63,18 +63,50 @@ import pandas as pd
 df = pd.read_csv('wc2026_predictions.csv')
 print(f"  Columns: {list(df.columns)}")
 print(f"  Row count: {len(df)}")
-expected_ids = [f"R16_{i:03d}" for i in range(1,9)] + \
-               [f"QF_{i:03d}" for i in range(1,5)] + \
-               [f"SF_{i:03d}" for i in range(1,3)] + \
-               ["TP_001","F_001"]
+
+# New format: 8 rows (QF -> Final only)
+expected_ids = (
+    [f"QF_{i:03d}" for i in range(1, 5)] +
+    [f"SF_{i:03d}" for i in range(1, 3)] +
+    ["TP_001", "F_001"]
+)
 id_ok = df['match_id'].tolist() == expected_ids
-print(f"  match_id format: {'[OK]' if id_ok else '[FAIL]'}")
-stages_ok = df['stage'].isin({'Round of 16','Quarter Final','Semi Final','Third Place Play-off','Final'}).all()
+print(f"  match_id format (8 rows QF->Final): {'[OK]' if id_ok else '[FAIL]'}")
+
+stages_ok = df['stage'].isin({'Quarter Final','Semi Final','Third Place Play-off','Final'}).all()
 print(f"  Stage names valid: {'[OK]' if stages_ok else '[FAIL]'}")
+
 scores_ok = (df['predicted_home_score'] >= 0).all() and (df['predicted_away_score'] >= 0).all()
 print(f"  Scores non-negative: {'[OK]' if scores_ok else '[FAIL]'}")
+
 team_ok = df['predicted_winner'].str.match(r'^[A-Z]{2,3}$').all()
 print(f"  Winner codes valid: {'[OK]' if team_ok else '[FAIL]'}")
 
+# Scorer format: no commas inside scorer fields, semicolons only
+no_comma_ok = True
+for _, row in df.iterrows():
+    sh = str(row['predicted_scorers_home'])
+    sa = str(row['predicted_scorers_away'])
+    if (',' in sh and sh != 'nan') or (',' in sa and sa != 'nan'):
+        no_comma_ok = False
+print(f"  Scorer separator is semicolon: {'[OK]' if no_comma_ok else '[FAIL]'}")
+
+# Scorer count rule
+count_ok = True
+for _, row in df.iterrows():
+    hs = int(row['predicted_home_score'])
+    as_ = int(row['predicted_away_score'])
+    sh = [x for x in str(row['predicted_scorers_home']).split(';') if x.strip() and x != 'nan']
+    sa = [x for x in str(row['predicted_scorers_away']).split(';') if x.strip() and x != 'nan']
+    if len(sh) > hs or len(sa) > as_:
+        count_ok = False
+    if hs > 0 and len(sh) == 0:
+        count_ok = False
+    if as_ > 0 and len(sa) == 0:
+        count_ok = False
+print(f"  Scorer count matches score: {'[OK]' if count_ok else '[FAIL]'}")
+
+all_pass = id_ok and stages_ok and scores_ok and team_ok and no_comma_ok and count_ok
 print()
 print("=== DIAGNOSIS SUMMARY ===")
+print(f"  {'ALL CHECKS PASSED' if all_pass else 'SOME CHECKS FAILED'}")

@@ -8,10 +8,10 @@ from src.elo_model import expected_score
 from src.data import ROUND_OF_16_FIXTURES, TEAM_SCORERS
 
 
-# ─── Goal Rate Constants ──────────────────────────────────────────────────────
-BASE_GOALS_PER_GAME = 1.35  # Average goals per team per WC knockout game
-DISPERSION_PARAMETER = 6.0  # r parameter for Negative Binomial (controls overdispersion)
-DIXON_COLES_RHO = -0.05      # Correlation parameter for low-scoring adjustment
+# ─── Goal Rate Constants ────────────────────────────────────────────────────────────────
+BASE_GOALS_PER_GAME  = 1.42   # WC 2026 actual avg: ~2.84 goals/game total = 1.42 per team
+DISPERSION_PARAMETER = 6.0    # r for Negative Binomial (controls overdispersion)
+DIXON_COLES_RHO      = -0.05  # Correlation parameter for low-scoring adjustment
 
 
 def compute_expected_goals(team_a_ratings: dict, team_b_ratings: dict,
@@ -53,9 +53,10 @@ def apply_dixon_coles(score_counts: dict, lambda_a: float, lambda_b: float, rho:
 
 
 def simulate_match(team_a_ratings: dict, team_b_ratings: dict,
-                   n_sims: int = 50000, rng: np.random.Generator = None) -> dict:
+                   n_sims: int = 100000, rng: np.random.Generator = None) -> dict:
     """
     Simulate a single match n_sims times using Negative Binomial distribution.
+    Default raised to 100,000 simulations for tighter probability convergence.
     """
     if rng is None:
         rng = np.random.default_rng(42)

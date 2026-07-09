@@ -34,7 +34,7 @@ def format_scorers(jersey_numbers: list) -> str:
     """Format jersey numbers as a comma-separated string."""
     if not jersey_numbers:
         return ""
-    return ",".join(str(j) for j in sorted(jersey_numbers))
+    return ";".join(str(j) for j in sorted(jersey_numbers))
 
 
 def generate_submission_csv(predictions: list, champion: str,

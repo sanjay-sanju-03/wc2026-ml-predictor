@@ -1,17 +1,9 @@
 match_id,stage,home_team,away_team,predicted_home_score,predicted_away_score,predicted_scorers_home,predicted_scorers_away,predicted_winner
-R16_001,Round of 16,PAR,FRA,0,1,,9,FRA
-R16_002,Round of 16,CAN,MAR,0,3,,"8,9",MAR
-R16_003,Round of 16,BRA,NOR,1,2,10,9,NOR
-R16_004,Round of 16,MEX,ENG,2,3,9,"9,10",ENG
-R16_005,Round of 16,POR,ESP,0,1,,6,ESP
-R16_006,Round of 16,USA,BEL,1,4,17,"9,17,20",BEL
-R16_007,Round of 16,ARG,EGY,3,2,"10,13,24","6,14",ARG
-R16_008,Round of 16,SUI,COL,0,0,,,SUI
 QF_001,Quarter Final,FRA,MAR,0,0,,,FRA
-QF_002,Quarter Final,NOR,ENG,1,1,10,10,ENG
-QF_003,Quarter Final,ESP,BEL,1,0,7,,ESP
+QF_002,Quarter Final,NOR,ENG,1,1,10,9,ENG
+QF_003,Quarter Final,ESP,BEL,1,1,19,9,ESP
 QF_004,Quarter Final,ARG,SUI,0,0,,,SUI
-SF_001,Semi Final,FRA,ENG,1,1,9,10,FRA
+SF_001,Semi Final,FRA,ENG,1,1,10,9,FRA
 SF_002,Semi Final,ESP,SUI,0,0,,,ESP
-TP_001,Third Place Play-off,ENG,SUI,0,0,,,ENG
+TP_001,Third Place Play-off,ENG,SUI,1,1,10,9,ENG
 F_001,Final,FRA,ESP,0,0,,,FRA

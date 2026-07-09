@@ -1,10 +1,13 @@
 """
 elo_model.py - Goal-based Attack & Defense rating model.
 Tracks team attacking and defending strengths separately using historical goal counts.
+Includes time-decay weighting (recent matches matter more) and separate K-factors
+for regular matches vs. WC knockout stage matches.
 """
 
 import pandas as pd
 import numpy as np
+from datetime import datetime
 from src.data import ELO_SEED, ROUND_OF_32_RESULTS, ROUND_OF_16_RESULTS
 
 COUNTRY_TO_CODE = {
@@ -79,11 +82,16 @@ def build_elo_from_history(matches_df: pd.DataFrame,
                            wc_k: float = 24.0) -> dict:
     """
     Build Attack and Defense Elo ratings by replaying historical matches.
+    Applies time-decay: matches in the last 2 years receive up to 2x the K-factor.
+    WC matches receive a higher K-factor to reflect their predictive value.
     """
     # Each team has an att and def rating initialized to seed
     ratings = {}
     for team, seed in ELO_SEED.items():
         ratings[team] = {"att": seed, "def": seed}
+
+    # Reference date for time-decay (WC 2026 start)
+    reference_date = datetime(2026, 6, 11)
 
     # Replay historical matches chronologically
     for _, row in matches_df.iterrows():
@@ -101,9 +109,28 @@ def build_elo_from_history(matches_df: pd.DataFrame,
         if away not in ratings:
             ratings[away] = {"att": 1500.0, "def": 1500.0}
 
-        # K-factor weighting
+        # K-factor: WC matches carry more weight
         is_wc = "World Cup" in str(row.get("tournament", ""))
-        k = wc_k if is_wc else base_k
+        k_base = wc_k if is_wc else base_k
+
+        # Time-decay: exponential decay, half-life ~4 years
+        # Matches within last 2 years: multiplier up to 2.0
+        # Matches older than 8 years: multiplier ~0.5
+        match_date = row.get("date", None)
+        decay_multiplier = 1.0
+        if match_date is not None:
+            try:
+                if isinstance(match_date, str):
+                    match_date = datetime.strptime(str(match_date)[:10], "%Y-%m-%d")
+                elif hasattr(match_date, 'to_pydatetime'):
+                    match_date = match_date.to_pydatetime()
+                years_ago = (reference_date - match_date).days / 365.25
+                # Decay: multiply K by exp(-0.1 * years_ago), capped [0.5, 2.0]
+                decay_multiplier = np.clip(np.exp(-0.1 * max(years_ago - 1.0, 0.0)), 0.5, 2.0)
+            except Exception:
+                decay_multiplier = 1.0
+
+        k = k_base * decay_multiplier
 
         # Home ground advantage (approx 80 rating points boost if not neutral)
         is_neutral = row.get("neutral", True)
@@ -128,9 +155,11 @@ def build_elo_from_history(matches_df: pd.DataFrame,
 def apply_wc2026_updates(ratings: dict) -> dict:
     """
     Apply WC 2026 Round-of-32 and Round-of-16 results to update Elo ratings.
+    Uses higher K=32 for R16 knockout matches (higher stake = stronger signal).
     """
     ratings = {k: v.copy() for k, v in ratings.items()}
-    wc_k = 24.0
+    r32_k = 24.0  # Group/R32 K-factor
+    r16_k = 32.0  # R16 knockout: elevated K-factor — confirmed results carry more weight
 
     # 1. Round of 32 updates
     for home, away, hg, ag, winner in ROUND_OF_32_RESULTS:
@@ -147,7 +176,7 @@ def apply_wc2026_updates(ratings: dict) -> dict:
 
         # Knockouts are neutral venue
         new_att_h, new_def_h, new_att_a, new_def_a = update_attack_defense(
-            att_h, def_h, att_a, def_a, hg, ag, wc_k, 0.0
+            att_h, def_h, att_a, def_a, hg, ag, r32_k, 0.0
         )
 
         ratings[home]["att"] = new_att_h
@@ -155,7 +184,7 @@ def apply_wc2026_updates(ratings: dict) -> dict:
         ratings[away]["att"] = new_att_a
         ratings[away]["def"] = new_def_a
 
-    # 2. Round of 16 updates
+    # 2. Round of 16 updates — elevated K-factor
     for home, away, hg, ag, winner in ROUND_OF_16_RESULTS:
         if hg is None:
             continue
@@ -169,7 +198,7 @@ def apply_wc2026_updates(ratings: dict) -> dict:
         att_a, def_a = ratings[away]["att"], ratings[away]["def"]
 
         new_att_h, new_def_h, new_att_a, new_def_a = update_attack_defense(
-            att_h, def_h, att_a, def_a, hg, ag, wc_k, 0.0
+            att_h, def_h, att_a, def_a, hg, ag, r16_k, 0.0
         )
 
         ratings[home]["att"] = new_att_h

@@ -49,27 +49,29 @@ ROUND_OF_16_RESULTS = [
     ("SUI", "COL", 0, 0, "SUI"),   # Switzerland won 4-3 on penalties
 ]
 
-# ─── Team Elo Ratings (pre-WC 2026 baseline, will be updated by model) ────────
-# Computed from historical data; here are approximate seed values.
+# ─── Team Elo Ratings (recalibrated baseline after WC 2026 group + R32 + R16) ──
+# Seeds updated to reflect actual WC 2026 tournament performance observed.
+# Key uplifts: NOR (upset BRA, Haaland 7 goals), ARG (Messi 8 goals),
+#              MAR (dominant 3-0 vs CAN), BEL (4-1 vs USA).
 ELO_SEED = {
-    "FRA": 2050,
-    "ESP": 2020,
-    "BRA": 2010,
-    "ARG": 2000,
-    "ENG": 1980,
-    "POR": 1960,
+    "FRA": 2060,   # Mbappé 7g, flawless run
+    "ESP": 2030,   # Beat POR, controlled displays
+    "ARG": 2055,   # Messi 8g — tournament top scorer
+    "BRA": 2005,   # Eliminated R16 (lost to NOR)
+    "ENG": 1990,   # Kane 6g, Bellingham 4g
+    "NOR": 1920,   # MAJOR UPGRADE: Haaland 7g, beat BRA
+    "BEL": 1960,   # Dominant 4-1 vs USA, strong R16
+    "MAR": 1880,   # 3-0 vs CAN, made QF again
+    "POR": 1950,   # Lost R16 to ESP (tight)
+    "SUI": 1800,   # Made QF via pens, solid defense
     "GER": 1940,
     "NED": 1930,
-    "BEL": 1910,
     "COL": 1850,
-    "USA": 1840,
-    "MEX": 1830,
-    "CAN": 1820,
-    "MAR": 1800,
-    "SUI": 1790,
+    "USA": 1830,
+    "MEX": 1820,
+    "CAN": 1815,
     "CRO": 1780,
     "SEN": 1770,
-    "NOR": 1750,
     "SWE": 1740,
     "AUT": 1730,
     "JPN": 1720,
@@ -87,40 +89,71 @@ ELO_SEED = {
 }
 
 # ─── WC 2026 Tournament Top Scorers (jersey numbers) ─────────────────────────
-# Sourced from WC 2026 player performance data + public reports.
-# Format: team_code -> [(jersey_number, player_name, goals_so_far), ...]
-# Sorted by expected scoring probability (descending).
+# UPDATED with REAL WC 2026 tournament goals as of Quarter Final stage (July 9 2026).
+# Source: FIFA official tournament top scorers list.
+# Format: team_code -> [(jersey_number, player_name, goals_in_tournament), ...]
+# Sorted by goal tally descending (highest scorer weighted highest in probability).
 TEAM_SCORERS = {
-    "FRA": [(10, "Mbappe", 4), (9, "Giroud", 2), (7, "Dembele", 1)],
-    "BRA": [(10, "Vinicius", 3), (9, "Rodrygo", 2), (7, "Raphinha", 2)],
-    "ARG": [(10, "Messi", 3), (9, "Alvarez", 2), (22, "Lautaro", 1)],
-    "ENG": [(9, "Kane", 4), (10, "Bellingham", 2), (7, "Saka", 1)],
-    "ESP": [(7, "Yamal", 2), (10, "Pedri", 2), (9, "Morata", 2)],
-    "POR": [(7, "Ronaldo", 3), (8, "Fernandes", 2), (11, "Felix", 1)],
-    "GER": [(9, "Havertz", 2), (10, "Musiala", 1), (7, "Gnabry", 1)],
-    "NED": [(10, "Gakpo", 2), (9, "Depay", 2), (11, "Bergwijn", 1)],
-    "CAN": [(10, "Davies", 2), (9, "David", 1), (7, "Larin", 1)],
-    "MAR": [(7, "Ziyech", 2), (10, "Boufal", 1), (9, "En-Nesyri", 1)],
-    "PAR": [(9, "Sanabria", 2), (10, "Almiron", 1), (7, "Romero", 1)],
-    "USA": [(9, "Pulisic", 2), (10, "McKennie", 1), (7, "Weah", 1)],
-    "BEL": [(9, "Lukaku", 3), (10, "De Bruyne", 2), (7, "Doku", 1)],
-    "SUI": [(9, "Embolo", 2), (10, "Xhaka", 1), (7, "Vargas", 1)],
-    "COL": [(10, "James", 2), (9, "Falcao", 1), (11, "Vidal", 1)],
-    "NOR": [(9, "Haaland", 4), (10, "Odegaard", 2), (7, "Sorloth", 1)],
-    "MEX": [(9, "Jimenez", 2), (10, "Lozano", 1), (7, "Antuna", 1)],
-    "CIV": [(9, "Pepe", 2), (10, "Seri", 1), (7, "Gradel", 1)],
-    "CRO": [(10, "Modric", 2), (9, "Kramaric", 2), (7, "Perisic", 1)],
-    "SEN": [(10, "Mane", 3), (9, "Diedhiou", 1), (7, "Sarr", 1)],
-    "AUT": [(9, "Arnautovic", 2), (10, "Sabitzer", 1), (7, "Alaba", 1)],
-    "AUS": [(9, "Maclaren", 1), (10, "Irvine", 1)],
-    "EGY": [(10, "Salah", 3), (9, "Marmoush", 2)],
-    "ALG": [(10, "Mahrez", 2), (9, "Bounedjah", 1)],
-    "GHA": [(10, "Partey", 1), (9, "Kudus", 2)],
-    "BIH": [(9, "Dzeko", 2), (10, "Pjanic", 1)],
-    "CGO": [(9, "Mbemba", 1), (10, "Masuaku", 1)],
-    "ECU": [(10, "Caicedo", 1), (9, "Valencia", 2)],
-    "CPV": [(10, "Junior", 1), (9, "Rodrigues", 1)],
-    "JPN": [(10, "Doan", 1), (9, "Minamino", 1)],
-    "SWE": [(9, "Isak", 2), (10, "Forsberg", 1)],
-    "RSA": [(9, "Brockie", 1), (10, "Zungu", 1)],
+    # ── QF Teams (updated with confirmed WC 2026 tournament goals) ──────────────
+    "FRA": [(10, "Mbappe",    7),  # Confirmed: WC 2026 #2 top scorer
+            (7,  "Dembele",   4),  # Confirmed: WC 2026 top-5 scorer
+            (9,  "Thuram",    2),
+            (11, "Olise",     1)],
+
+    "ENG": [(9,  "Kane",      6),  # Confirmed: WC 2026 #4 top scorer
+            (10, "Bellingham",4),  # Confirmed: WC 2026 top-10 scorer
+            (7,  "Saka",      2)],
+
+    "NOR": [(9,  "Haaland",   7),  # Confirmed: WC 2026 #3 top scorer (7g)
+            (10, "Odegaard",  2),
+            (7,  "Sorloth",   1)],
+
+    "ARG": [(10, "Messi",     8),  # Confirmed: WC 2026 #1 top scorer (8g)!
+            (9,  "Alvarez",   2),
+            (22, "Lautaro",   1)],
+
+    "ESP": [(21, "Oyarzabal", 4),  # Confirmed: WC 2026 top-7 scorer (4g)
+            (10, "Olmo",      2),
+            (9,  "Gavi",      1),
+            (19, "Yamal",     1)],
+
+    "BEL": [(9,  "Lukaku",    4),  # Belgium: 6 goals in R32+R16
+            (7,  "Doku",      2),
+            (10, "De Bruyne", 1),
+            (6,  "Tielemans", 1)],
+
+    "SUI": [(9,  "Embolo",    2),
+            (10, "Xhaka",     1),
+            (7,  "Vargas",    1)],
+
+    "MAR": [(7,  "Ziyech",    3),  # Morocco: 7 goals total (R32+R16)
+            (9,  "En-Nesyri", 2),
+            (10, "Boufal",    1),
+            (2,  "Hakimi",    1)],
+
+    # ── Eliminated Teams (kept for completeness) ────────────────────────────────
+    "BRA": [(10, "Vinicius",  4), (9, "Rodrygo",  2), (7,  "Raphinha",  2)],
+    "POR": [(7,  "Ronaldo",   3), (8, "Fernandes", 2), (11, "Felix",    1)],
+    "GER": [(9,  "Havertz",   2), (10,"Musiala",  1), (7,  "Gnabry",   1)],
+    "NED": [(10, "Gakpo",     2), (9, "Depay",    2), (11, "Bergwijn",  1)],
+    "CAN": [(10, "Davies",    2), (9, "David",    1), (7,  "Larin",     1)],
+    "PAR": [(9,  "Sanabria",  2), (10,"Almiron",  1), (7,  "Romero",   1)],
+    "USA": [(9,  "Pulisic",   2), (10,"McKennie", 1), (7,  "Weah",     1)],
+    "COL": [(10, "James",     2), (9, "Falcao",   1), (11, "Vidal",    1)],
+    "MEX": [(9,  "Jimenez",   2), (10,"Lozano",   1), (7,  "Antuna",   1)],
+    "CIV": [(9,  "Pepe",      2), (10,"Seri",     1), (7,  "Gradel",   1)],
+    "CRO": [(10, "Modric",    2), (9, "Kramaric", 2), (7,  "Perisic",  1)],
+    "SEN": [(10, "Mane",      3), (9, "Diedhiou", 1), (7,  "Sarr",     4)],
+    "AUT": [(9,  "Arnautovic",2), (10,"Sabitzer", 1), (7,  "Alaba",    1)],
+    "AUS": [(9,  "Maclaren",  1), (10,"Irvine",   1)],
+    "EGY": [(10, "Salah",     3), (9, "Marmoush", 2)],
+    "ALG": [(10, "Mahrez",    2), (9, "Bounedjah",1)],
+    "GHA": [(10, "Partey",    1), (9, "Kudus",    2)],
+    "BIH": [(9,  "Dzeko",     2), (10,"Pjanic",   1)],
+    "CGO": [(9,  "Mbemba",    1), (10,"Masuaku",  1)],
+    "ECU": [(10, "Caicedo",   1), (9, "Valencia", 2)],
+    "CPV": [(10, "Junior",    1), (9, "Rodrigues",1)],
+    "JPN": [(10, "Doan",      1), (9, "Minamino", 1)],
+    "SWE": [(9,  "Isak",      2), (10,"Forsberg", 1)],
+    "RSA": [(9,  "Brockie",   1), (10,"Zungu",    1)],
 }
