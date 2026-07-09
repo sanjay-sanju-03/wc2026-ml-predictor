@@ -3,28 +3,50 @@ data.py - WC 2026 hardcoded data: bracket, results, team ratings, squads
 All data sourced from publicly available tournament records as of June 30, 2026.
 """
 
-# ─── WC 2026 Round-of-32 Results (confirmed as of June 30 2026) ───────────────
+# ─── WC 2026 Round-of-32 Results (confirmed as of July 3 2026) ─────────────────
 ROUND_OF_32_RESULTS = [
     # (home, away, home_goals, away_goals, winner)
     ("CAN", "RSA", 1, 0, "CAN"),
     ("BRA", "JPN", 2, 1, "BRA"),
     ("PAR", "GER", 1, 1, "PAR"),   # Paraguay won 4-3 on penalties
     ("MAR", "NED", 1, 1, "MAR"),   # Morocco won 3-2 on penalties
+    ("CIV", "NOR", 1, 2, "NOR"),
+    ("FRA", "SWE", 3, 0, "FRA"),
+    ("MEX", "ECU", 2, 0, "MEX"),
+    ("ENG", "CGO", 2, 1, "ENG"),   # CGO is code used for DR Congo
+    ("BEL", "SEN", 2, 2, "BEL"),   # Belgium won in extra time (3-2 AET)
+    ("USA", "BIH", 2, 0, "USA"),
+    ("ESP", "AUT", 3, 0, "ESP"),
+    ("POR", "CRO", 2, 1, "POR"),
+    ("SUI", "ALG", 2, 0, "SUI"),
+    ("AUS", "EGY", 1, 1, "EGY"),   # Egypt won 4-2 on penalties
+    ("ARG", "CPV", 1, 1, "ARG"),   # Argentina won in extra time (3-2 AET)
+    ("COL", "GHA", 1, 0, "COL"),
 ]
 
-# ─── Round-of-16 Fixtures ─────────────────────────────────────────────────────
-# UPDATE these once ALL R32 results are confirmed (by July 3).
-# Confirmed: Canada vs Morocco
-# Others: best-estimate from bracket structure (update before submission!)
+# ─── Round-of-16 Fixtures (confirmed as of July 3 2026) ───────────────────────
 ROUND_OF_16_FIXTURES = [
-    ("CAN", "MAR"),    # Match 89 - Confirmed
-    ("PAR", "FRA"),    # Match 90 - Paraguay vs France (FRA likely winner R32)
-    ("BRA", "NOR"),    # Match 91 - Brazil vs Norway (NOR likely R32 winner)
-    ("ESP", "ENG"),    # Match 92 - Spain vs England
-    ("POR", "USA"),    # Match 93 - Portugal vs USA
-    ("ARG", "BEL"),    # Match 94 - Argentina vs Belgium
-    ("MEX", "SUI"),    # Match 95 - Mexico vs Switzerland
-    ("COL", "CIV"),    # Match 96 - Colombia vs Ivory Coast
+    ("PAR", "FRA"),    # Match 89
+    ("CAN", "MAR"),    # Match 90
+    ("BRA", "NOR"),    # Match 91
+    ("MEX", "ENG"),    # Match 92
+    ("POR", "ESP"),    # Match 93
+    ("USA", "BEL"),    # Match 94
+    ("ARG", "EGY"),    # Match 95
+    ("SUI", "COL"),    # Match 96
+]
+
+# ─── Round-of-16 Results (confirmed as of July 7 2026) ────────────────────────
+ROUND_OF_16_RESULTS = [
+    # (home, away, home_goals, away_goals, winner)
+    ("PAR", "FRA", 0, 1, "FRA"),
+    ("CAN", "MAR", 0, 3, "MAR"),
+    ("BRA", "NOR", 1, 2, "NOR"),
+    ("MEX", "ENG", 2, 3, "ENG"),
+    ("POR", "ESP", 0, 1, "ESP"),
+    ("USA", "BEL", 1, 4, "BEL"),
+    ("ARG", "EGY", 3, 2, "ARG"),
+    ("SUI", "COL", 0, 0, "SUI"),   # Switzerland won 4-3 on penalties
 ]
 
 # ─── Team Elo Ratings (pre-WC 2026 baseline, will be updated by model) ────────

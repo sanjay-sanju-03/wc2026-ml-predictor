@@ -5,7 +5,7 @@ Tracks team attacking and defending strengths separately using historical goal c
 
 import pandas as pd
 import numpy as np
-from src.data import ELO_SEED, ROUND_OF_32_RESULTS
+from src.data import ELO_SEED, ROUND_OF_32_RESULTS, ROUND_OF_16_RESULTS
 
 COUNTRY_TO_CODE = {
     "France": "FRA",
@@ -127,11 +127,12 @@ def build_elo_from_history(matches_df: pd.DataFrame,
 
 def apply_wc2026_updates(ratings: dict) -> dict:
     """
-    Apply WC 2026 Round-of-32 results to update Elo ratings.
+    Apply WC 2026 Round-of-32 and Round-of-16 results to update Elo ratings.
     """
     ratings = {k: v.copy() for k, v in ratings.items()}
     wc_k = 24.0
 
+    # 1. Round of 32 updates
     for home, away, hg, ag, winner in ROUND_OF_32_RESULTS:
         if hg is None:
             continue
@@ -145,6 +146,28 @@ def apply_wc2026_updates(ratings: dict) -> dict:
         att_a, def_a = ratings[away]["att"], ratings[away]["def"]
 
         # Knockouts are neutral venue
+        new_att_h, new_def_h, new_att_a, new_def_a = update_attack_defense(
+            att_h, def_h, att_a, def_a, hg, ag, wc_k, 0.0
+        )
+
+        ratings[home]["att"] = new_att_h
+        ratings[home]["def"] = new_def_h
+        ratings[away]["att"] = new_att_a
+        ratings[away]["def"] = new_def_a
+
+    # 2. Round of 16 updates
+    for home, away, hg, ag, winner in ROUND_OF_16_RESULTS:
+        if hg is None:
+            continue
+
+        if home not in ratings:
+            ratings[home] = {"att": 1500.0, "def": 1500.0}
+        if away not in ratings:
+            ratings[away] = {"att": 1500.0, "def": 1500.0}
+
+        att_h, def_h = ratings[home]["att"], ratings[home]["def"]
+        att_a, def_a = ratings[away]["att"], ratings[away]["def"]
+
         new_att_h, new_def_h, new_att_a, new_def_a = update_attack_defense(
             att_h, def_h, att_a, def_a, hg, ag, wc_k, 0.0
         )

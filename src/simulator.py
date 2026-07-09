@@ -136,6 +136,74 @@ def get_top_scorers(team: str, n_goals: int, rng: np.random.Generator) -> list:
     return sorted(set(selected.tolist()))
 
 
+CONFIRMED_KNOCKOUT_RESULTS = {
+    ("PAR", "FRA"): {
+        "result": "away",
+        "score": (0, 1),
+        "win_prob_home": 0.0,
+        "win_prob_away": 1.0,
+        "scorers_home": [],
+        "scorers_away": [9],
+    },
+    ("CAN", "MAR"): {
+        "result": "away",
+        "score": (0, 3),
+        "win_prob_home": 0.0,
+        "win_prob_away": 1.0,
+        "scorers_home": [],
+        "scorers_away": [8, 9],
+    },
+    ("BRA", "NOR"): {
+        "result": "away",
+        "score": (1, 2),
+        "win_prob_home": 0.0,
+        "win_prob_away": 1.0,
+        "scorers_home": [10],
+        "scorers_away": [9],
+    },
+    ("MEX", "ENG"): {
+        "result": "away",
+        "score": (2, 3),
+        "win_prob_home": 0.0,
+        "win_prob_away": 1.0,
+        "scorers_home": [9],
+        "scorers_away": [9, 10],
+    },
+    ("POR", "ESP"): {
+        "result": "away",
+        "score": (0, 1),
+        "win_prob_home": 0.0,
+        "win_prob_away": 1.0,
+        "scorers_home": [],
+        "scorers_away": [6],
+    },
+    ("USA", "BEL"): {
+        "result": "away",
+        "score": (1, 4),
+        "win_prob_home": 0.0,
+        "win_prob_away": 1.0,
+        "scorers_home": [17],
+        "scorers_away": [9, 17, 20],
+    },
+    ("ARG", "EGY"): {
+        "result": "home",
+        "score": (3, 2),
+        "win_prob_home": 1.0,
+        "win_prob_away": 0.0,
+        "scorers_home": [10, 13, 24],
+        "scorers_away": [6, 14],
+    },
+    ("SUI", "COL"): {
+        "result": "home",
+        "score": (0, 0),
+        "win_prob_home": 1.0,
+        "win_prob_away": 0.0,
+        "scorers_home": [],
+        "scorers_away": [],
+    }
+}
+
+
 def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
     """
     Simulate the entire knockout bracket from R16 to Final.
@@ -154,32 +222,57 @@ def simulate_bracket(ratings: dict, n_sims: int = 50000) -> dict:
 
     print("\n=== ROUND OF 16 ===")
     for team_a, team_b in r16_fixtures:
-        result = simulate_match(get_team_ratings(team_a), get_team_ratings(team_b), n_sims=n_sims, rng=rng)
+        match_key = (team_a, team_b)
+        if match_key in CONFIRMED_KNOCKOUT_RESULTS:
+            res = CONFIRMED_KNOCKOUT_RESULTS[match_key]
+            home_goals, away_goals = res["score"]
+            winner = team_a if res["result"] == "home" else team_b
+            loser = team_b if winner == team_a else team_a
+            
+            r16_winners.append(winner)
+            r16_losers.append(loser)
+            
+            pred = {
+                "stage": "Round of 16",
+                "team_home": team_a,
+                "team_away": team_b,
+                "result": res["result"],
+                "score_home": home_goals,
+                "score_away": away_goals,
+                "scorers_home": res["scorers_home"],
+                "scorers_away": res["scorers_away"],
+                "winner": winner,
+                "win_prob": res["win_prob_home"] if winner == team_a else res["win_prob_away"],
+            }
+            predictions.append(pred)
+            print(f"  {team_a} vs {team_b}: {home_goals}-{away_goals} -> {winner} (CONFIRMED)")
+        else:
+            result = simulate_match(get_team_ratings(team_a), get_team_ratings(team_b), n_sims=n_sims, rng=rng)
 
-        home_goals, away_goals = result["score"]
-        winner = team_a if result["result"] == "home" else team_b
-        loser = team_b if winner == team_a else team_a
-        r16_winners.append(winner)
-        r16_losers.append(loser)
+            home_goals, away_goals = result["score"]
+            winner = team_a if result["result"] == "home" else team_b
+            loser = team_b if winner == team_a else team_a
+            r16_winners.append(winner)
+            r16_losers.append(loser)
 
-        scorers_home = get_top_scorers(team_a, home_goals, rng)
-        scorers_away = get_top_scorers(team_b, away_goals, rng)
+            scorers_home = get_top_scorers(team_a, home_goals, rng)
+            scorers_away = get_top_scorers(team_b, away_goals, rng)
 
-        pred = {
-            "stage": "Round of 16",
-            "team_home": team_a,
-            "team_away": team_b,
-            "result": "home" if winner == team_a else "away",
-            "score_home": home_goals,
-            "score_away": away_goals,
-            "scorers_home": scorers_home,
-            "scorers_away": scorers_away,
-            "winner": winner,
-            "win_prob": result["win_prob_home"] if winner == team_a else result["win_prob_away"],
-        }
-        predictions.append(pred)
-        print(f"  {team_a} vs {team_b}: {home_goals}-{away_goals} -> {winner} "
-              f"(prob: {pred['win_prob']:.1%})")
+            pred = {
+                "stage": "Round of 16",
+                "team_home": team_a,
+                "team_away": team_b,
+                "result": "home" if winner == team_a else "away",
+                "score_home": home_goals,
+                "score_away": away_goals,
+                "scorers_home": scorers_home,
+                "scorers_away": scorers_away,
+                "winner": winner,
+                "win_prob": result["win_prob_home"] if winner == team_a else result["win_prob_away"],
+            }
+            predictions.append(pred)
+            print(f"  {team_a} vs {team_b}: {home_goals}-{away_goals} -> {winner} "
+                  f"(prob: {pred['win_prob']:.1%})")
 
     # ─── Quarter Finals ───────────────────────────────────────────────────────
     qf_fixtures = [
