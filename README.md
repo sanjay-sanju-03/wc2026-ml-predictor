@@ -7,7 +7,7 @@
 
 A Negative Binomial Monte Carlo tournament simulator with Dixon-Coles calibration that predicts the winner, regulation-time score, and goal scorers for all 16 knockout matches of the 2026 FIFA World Cup — from Round of 16 through the Final.
 
-**Provisional champion prediction: ARG** *(will be regenerated after all Round of 32 fixtures are confirmed)*
+**Current champion prediction: FRA** *(updated on July 10, 2026 after completed Round of 32 and Round of 16 matches)*
 
 ---
 
@@ -43,7 +43,7 @@ Step 5: Export CSV
 - `predicted_winner` stores the team expected to progress from the knockout match. A drawn regulation score is allowed, and this field is always populated for all 16 matches.
 - For the Final, `predicted_winner` contains the team expected to win the tournament. Re-check final validator behavior before upload to confirm this field interpretation.
 - Scorer jersey numbers correspond to the **set of players predicted to score** in that match. Exact set match is required for scorer points.
-- The bracket is **provisional** and will be regenerated once all Round of 32 results are confirmed (by July 3).
+- The bracket is **fully updated** with completed Round of 32 and Round of 16 match results as of July 10, 2026.
 
 ---
 
@@ -112,40 +112,35 @@ $env:PYTHONIOENCODING="utf-8"; python test_model.py
 
 ---
 
-## Provisional Predictions
+## Predictions & Bracket Status (As of July 10, 2026)
 
-> **These are illustrative bracket outputs and will be regenerated after all Round of 32 results are finalized.**
+> **The Round of 32 and Round of 16 results have been completely replayed. The table below lists the actual scores for the Round of 16 matches, and the model's simulated predictions for the Quarterfinals and beyond.**
 
 | match_id | Stage | Home | Away | Score | Winner | Win Prob |
 |----------|-------|------|------|-------|--------|----------|
-| R16_001 | Round of 16 | CAN | MAR | 0–0 | MAR | 59.2% |
-| R16_002 | Round of 16 | PAR | FRA | 0–1 | FRA | 74.2% |
-| R16_003 | Round of 16 | BRA | NOR | 2–1 | BRA | 76.1% |
-| R16_004 | Round of 16 | ESP | ENG | 0–0 | ENG | 50.4% |
-| R16_005 | Round of 16 | POR | USA | 1–1 | POR | 72.7% |
-| R16_006 | Round of 16 | ARG | BEL | 1–0 | ARG | 66.7% |
-| R16_007 | Round of 16 | MEX | SUI | 0–0 | SUI | 58.0% |
-| R16_008 | Round of 16 | COL | CIV | 0–0 | COL | 57.8% |
-| QF_001 | Quarter Final | MAR | FRA | 0–1 | FRA | 67.6% |
-| QF_002 | Quarter Final | BRA | ENG | 1–1 | BRA | 58.8% |
-| QF_003 | Quarter Final | POR | ARG | 0–0 | ARG | 65.5% |
-| QF_004 | Quarter Final | SUI | COL | 0–0 | SUI | 50.2% |
-| SF_001 | Semi Final | FRA | BRA | 1–1 | FRA | 54.2% |
-| SF_002 | Semi Final | ARG | SUI | 0–0 | ARG | 67.1% |
-| TP_001 | Third Place Play-off | BRA | SUI | 1–1 | BRA | 63.6% |
-| F_001 | Final | FRA | ARG | 0–0 | ARG | 52.2% |
+| R16_001 | Round of 16 | PAR | FRA | 0–1 | FRA | 100.0% (Actual) |
+| R16_002 | Round of 16 | CAN | MAR | 0–3 | MAR | 100.0% (Actual) |
+| R16_003 | Round of 16 | BRA | NOR | 1–2 | NOR | 100.0% (Actual) |
+| R16_004 | Round of 16 | MEX | ENG | 2–3 | ENG | 100.0% (Actual) |
+| R16_005 | Round of 16 | POR | ESP | 0–1 | ESP | 100.0% (Actual) |
+| R16_006 | Round of 16 | USA | BEL | 1–4 | BEL | 100.0% (Actual) |
+| R16_007 | Round of 16 | ARG | EGY | 3–2 | ARG | 100.0% (Actual) |
+| R16_008 | Round of 16 | SUI | COL | 0–0 | SUI | 100.0% (Actual) |
+| QF_001 | Quarter Final | FRA | MAR | 0–0 | FRA | 57.3% |
+| QF_002 | Quarter Final | NOR | ENG | 1–1 | ENG | 53.5% |
+| QF_003 | Quarter Final | ESP | BEL | 1–0 | ESP | 57.1% |
+| QF_004 | Quarter Final | ARG | SUI | 0–0 | ARG | 57.8% |
+| SF_001 | Semi Final | FRA | ENG | 1–1 | FRA | 59.0% |
+| SF_002 | Semi Final | ESP | ARG | 0–0 | ESP | 52.7% |
+| TP_001 | Third Place Play-off | ENG | ARG | 1–1 | ARG | 52.6% |
+| F_001 | Final | FRA | ESP | 0–0 | FRA | 52.3% |
 
 ---
 
-## Confirmed R32 Results (Elo updated)
+## Knockout Stage Results Status
 
-| Match | Score | Advancing |
-|-------|-------|-----------|
-| CAN vs RSA | 1–0 | CAN |
-| BRA vs JPN | 2–1 | BRA |
-| PAR vs GER | 1–1 (pens 4–3) | PAR |
-| MAR vs NED | 1–1 (pens 3–2) | MAR |
-| Remaining 12 | — | In progress, finish by July 3 |
+- **Round of 32:** All 16 matches successfully completed (June 28 – July 3) and Elo ratings updated dynamically.
+- **Round of 16:** All 8 matches successfully completed (July 4 – July 7) and replayed to determine the actual Quarterfinal matchups.
 
 ---
 
